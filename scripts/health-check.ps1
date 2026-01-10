@@ -1,33 +1,41 @@
-Write-Host "=== System Health Check ==="
+function Check-DiskSpace {
+    Write-Host ""
+    Write-Host "=== Disk Space Check ==="
 
-Get-PSDrive -PSProvider FileSystem
+    $threshold = 50
 
-$threshold = 50
-
-Get-PSDrive -PSProvider FileSystem | ForEach-Object {
-    if ($_.Free -lt $threshold) {
-        Write-Host "WARNING: Drive $($_.Name) has low free space: $($_.Free) GB" -ForegroundColor Red
+    Get-PSDrive -PSProvider FileSystem | ForEach-Object {
+        if ($_.Free -lt $threshold) {
+            Write-Host "WARNING: Drive $($_.Name) has low free space: $($_.Free) GB" -ForegroundColor Red
+        }
     }
 }
 
-Write-Host ""
-Write-Host "=== Memory Check ==="
 
-$vmStat = vm_stat
+function Check-Memory {
+    Write-Host ""
+    Write-Host "=== Memory Check ==="
 
-$pageSize = ($vmStat | Select-String "page size of").ToString().Split(" ")[-2]
-$pageSize = [int]$pageSize
+    $vmStat = vm_stat
 
-$pagesFree = [int](($vmStat | Select-String "Pages free").ToString().Split(":")[1].Trim())
-$pagesInactive = [int](($vmStat | Select-String "Pages inactive").ToString().Split(":")[1].Trim())
-$pagesSpeculative = [int](($vmStat | Select-String "Pages speculative").ToString().Split(":")[1].Trim())
+    $pageSize = ($vmStat | Select-String "page size of").ToString().Split(" ")[-2]
+    $pageSize = [int]$pageSize
 
-$availablePages = $pagesFree + $pagesInactive + $pagesSpeculative
-$availableMemoryGB = [math]::Round(($availablePages * $pageSize) / 1GB, 2)
+    $pagesFree = [int](($vmStat | Select-String "Pages free").ToString().Split(":")[1].Trim())
+    $pagesInactive = [int](($vmStat | Select-String "Pages inactive").ToString().Split(":")[1].Trim())
+    $pagesSpeculative = [int](($vmStat | Select-String "Pages speculative").ToString().Split(":")[1].Trim())
 
-Write-Host "Available Memory: $availableMemoryGB GB"
+    $availablePages = $pagesFree + $pagesInactive + $pagesSpeculative
+    $availableMemoryGB = [math]::Round(($availablePages * $pageSize) / 1GB, 2)
 
-if ($availableMemoryGB -lt 4) {
-    Write-Host "WARNING: Low available memory!" -ForegroundColor Red
+    Write-Host "Available Memory: $availableMemoryGB GB"
+
+    if ($availableMemoryGB -lt 4) {
+        Write-Host "WARNING: Low available memory!" -ForegroundColor Red
+    }
 }
 
+Write-Host "=== System Health Check ==="
+
+Check-DiskSpace
+Check-Memory
