@@ -55,15 +55,25 @@ function Write-Log {
     param (
         [string]$Message
     )
+
+    # Timestamp the message
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logMessage = "$timestamp - $Message"
 
-    # Get the project root from script location
-    $scriptDir = Split-Path -Parent $PSCommandPath
-    $projectRoot = Split-Path -Parent $scriptDir
-    $logPath = Join-Path -Path $projectRoot -ChildPath "logs/health-check.log"
+    # Define project-root logs folder and log file
+    $projectRoot = (Get-Location)  # assumes you run script from project root
+    $logFolder = Join-Path -Path $projectRoot -ChildPath "logs"
+    $logPath = Join-Path -Path $logFolder -ChildPath "health-check.log"
 
+    # Ensure the logs folder exists
+    if (-not (Test-Path $logFolder)) {
+        New-Item -Path $logFolder -ItemType Directory -Force | Out-Null
+    }
+
+    # Append message to log (creates file if it doesn't exist)
     Add-Content -Path $logPath -Value $logMessage
+
+    # Also print to console
     Write-Host $Message
 }
 
